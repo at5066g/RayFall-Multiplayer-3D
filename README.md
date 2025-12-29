@@ -1,29 +1,26 @@
 # RAYFALL
 
-**RAYFALL** is a high-performance, retro-style 3D First-Person Shooter (FPS) engine built from scratch using **React**, **TypeScript**, and **HTML5 Canvas**. It utilizes the classic **Digital Differential Analysis (DDA)** raycasting technique, reminiscent of 90s classics like *Wolfenstein 3D* and *Doom*.
+**RAYFALL** is a high-performance, retro-style 3D First-Person Shooter (FPS) engine built from scratch using **React**, **TypeScript**, and **HTML5 Canvas**. It features a classic **Raycasting Engine** (Wolfenstein 3D style) and fully integrated **Multiplayer Mode**.
 
 ![RAYFALL Preview][https://rayfall.vercel.app]
 
 ## 🚀 Features
 
+### Multiplayer Mode (New)
+*   **Real-time PVP**: Battle against friends with low-latency position and combat sync.
+*   **Lobby System**: Create or Join rooms, set custom Usernames and Match Durations (2m, 5m, 10m).
+*   **Hardcore Mechanics**: Limited ammo, loot drops on death, and ammo refill on respawn.
+*   **Match Timer**: Server-authoritative countdown and Game Over screen with Winner display.
+
 ### Core Engine
-- **Custom Raycasting Engine**: A pure TypeScript implementation of the DDA algorithm for wall intersections.
-- **Direct Pixel Manipulation**: High-performance rendering using `Uint32Array` buffers to bypass slow Canvas API calls.
-- **Z-Buffering**: Accurate sprite-to-wall depth testing for proper occlusion of enemies and items.
-- **Verticality**: Support for jumping, gravity, and camera pitch (looking up/down).
-- **Floor & Ceiling Casting**: Performance-optimized horizontal plane rendering with distance-based fog.
+*   **Custom Raycasting**: Pure TypeScript implementation of DDA algorithm.
+*   **Performance**: Direct `Uint32Array` pixel manipulation for 60+ FPS.
+*   **Verticality**: Jumping, looking up/down (Y-Shearing), and variable wall heights.
 
 ### Gameplay
-- **Tactical Combat**: Semi-auto and automatic weapons with recoil, fire rates, and headshot multipliers.
-- **Enemy AI**: Finite State Machine (FSM) driven enemies that idle, chase, and engage in melee or ranged combat.
-- **Loot System**: Health and ammo pickups with limited lifetimes spawned from defeated enemies.
-- **Difficulty Levels**: Recruit, Veteran, and Nightmare modes affecting damage scales and enemy aggression.
-
-### Visuals & Audio
-- **Procedural Textures**: 64x64 textures generated programmatically (bricks, tech panels, animated slime).
-- **Dynamic HUD**: Smoothly interpolated (LERP) vitals, ammo counts, and a tactical minimap.
-- **Synthesized Audio**: Procedural sound effects (gunshots, reloads, heals) generated via the **Web Audio API**.
-- **Visual Effects**: Screen-space muzzle flashes, hit markers, and wall decals (bullet holes).
+*   **Weapons**: Primary assault rifle and secondary pistol with realistic recoil.
+*   **Loot**: Health Orbs & Ammo Crates spawned dynamically (or dropped by players).
+*   **Difficulty**: Single-player difficulty scaling (Recruit, Veteran, Nightmare).
 
 ## 🎮 Controls
 
@@ -32,63 +29,55 @@
 | **Movement** | `W` `A` `S` `D` |
 | **Look** | `Mouse` |
 | **Shoot** | `Left Click` |
-| **Aim / Scope** | `Right Click` |
+| **Aim** | `Right Click` |
 | **Jump** | `Space` |
 | **Reload** | `R` |
-| **Switch Weapon** | `Scroll Wheel` |
-| **Pause / Menu** | `ESC` |
+| **Scores** | `TAB` (Multiplayer) |
+| **Pause** | `ESC` |
 
 ## 🛠️ Technical Stack
 
-- **Framework**: [React 19](https://react.dev/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Bundler**: [Vite 6](https://vitejs.dev/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **Rendering**: HTML5 Canvas 2D Context (ImageData buffer)
-- **Audio**: Web Audio API
-
-## 🏗️ Project Structure
-
-```text
-├── engine/
-│   ├── Raycaster.ts     # Core DDA rendering logic
-│   ├── textures.ts      # Procedural texture generation
-│   └── SoundManager.ts  # Web Audio synthesis logic
-├── components/
-│   ├── Game.tsx         # Main game loop & React state bridge
-│   ├── Minimap.tsx      # 2D tactical overlay
-│   └── Homepage.tsx     # Menu system
-├── types.ts             # Global TS interfaces & enums
-├── constants.ts         # Game balance and map data
-└── index.tsx            # Application entry point
-```
+*   **Frontend**: React 19, Vite, TypeScript, TailwindCSS
+*   **Backend**: Node.js, Express, Socket.io
+*   **Rendering**: HTML5 Canvas 2D (Raycasting)
+*   **Audio**: Web Audio API (Procedural Synthesis)
 
 ## ⚡ Getting Started
 
 ### Prerequisites
-- Node.js (v18+)
-- npm or yarn
+*   Node.js (v18+)
 
 ### Installation
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Run the development server:
-   ```bash
-   npm run dev
-   ```
-4. Build for production:
-   ```bash
-   npm run build
-   ```
+1.  **Install All Dependencies** (Frontend & Backend):
+    ```bash
+    npm install && cd server && npm install && cd ..
+    ```
 
-## 📜 Logic Documentation
-For a deep dive into the mathematical implementation of the physics, AI, and rendering systems, please refer to the `logic_documentation.txt` file included in the root directory.
+2.  **Run Development Server**:
+    *   **Frontend**: `npm run dev` (http://localhost:3000)
+    *   **Backend**: `node server/index.js` (http://localhost:3002)
+
+3.  **Run Production Mode** (Local):
+    ```bash
+    npm run build
+    npm run start
+    ```
+
+## 🌍 Deployment
+
+This project is configured for deployment on **Render.com** (or any Node.js host).
+
+**Build Command:**
+```bash
+npm install && cd server && npm install && cd .. && npm run build
+```
+
+**Start Command:**
+```bash
+npm run start
+```
+
+For a detailed walkthrough, verify `deployment_guide.md` in the repository.
 
 ## 📄 License
-MIT License - feel free to use this engine as a base for your own raycasting projects!
-
-
-[def]: https://rayfall.vercel.app
+MIT License.

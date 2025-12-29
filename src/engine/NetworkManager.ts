@@ -7,6 +7,7 @@ export class NetworkManager {
     public playerId: string | null = null;
     public roomId: string | null = null;
     public players: Record<string, any> = {};
+    public timeLeft: number = 300;
 
     // Callbacks
     public onStateUpdate: ((players: any) => void) | null = null;
@@ -56,11 +57,19 @@ export class NetworkManager {
         this.socket.on('playerJoined', (data: any) => {
             console.log('Player Joined:', data);
             this.players = data.currentPlayers;
-            if (this.onStateUpdate) this.onStateUpdate(this.players);
+
             // If it's me joining
-            if (data.id === this.playerId && this.onRoomJoined) {
-                this.onRoomJoined(this.roomId!);
+            if (data.id === this.playerId) {
+                this.roomId = data.roomId; // Capture RoomID
+                if (data.timeLeft) {
+                    if (this.onTimeUpdate) this.onTimeUpdate(data.timeLeft);
+                }
+                if (this.onRoomJoined) {
+                    this.onRoomJoined(this.roomId!);
+                }
             }
+
+            if (this.onStateUpdate) this.onStateUpdate(this.players);
         });
 
         this.socket.on('playerLeft', (id: string) => {
@@ -126,6 +135,7 @@ export class NetworkManager {
         });
 
         this.socket.on('timeUpdate', (time: number) => {
+            this.timeLeft = time; // Update local state
             if (this.onTimeUpdate) this.onTimeUpdate(time);
         });
 

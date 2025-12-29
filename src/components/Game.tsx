@@ -95,7 +95,7 @@ export const Game: React.FC<GameProps> = ({ difficulty, onExit, isMultiplayer = 
 
   const [sensitivity, setSensitivity] = useState(1.0);
   const [isInfiniteAmmo, setIsInfiniteAmmo] = useState(!isMultiplayer);
-  const [timeLeft, setTimeLeft] = useState(300); // Default 5 mins
+  const [timeLeft, setTimeLeft] = useState(NetworkManager.getInstance().timeLeft);
   const [gameOverData, setGameOverData] = useState<{ winnerId: string, winnerName: string, scores: any } | null>(null);
   const [isScoped, setIsScoped] = useState(false);
 

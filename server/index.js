@@ -112,7 +112,8 @@ io.on('connection', (socket) => {
 
         io.to(roomId).emit('playerJoined', {
             id: socket.id,
-            name: username, // Send Name
+            roomId: roomId, // Send RoomID so client knows what they joined
+            name: username,
             currentPlayers: room.players,
             timeLeft: room.timeLeft
         });
