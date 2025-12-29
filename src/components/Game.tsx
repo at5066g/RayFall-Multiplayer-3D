@@ -97,7 +97,10 @@ export const Game: React.FC<GameProps> = ({ difficulty, onExit, isMultiplayer = 
   const [isInfiniteAmmo, setIsInfiniteAmmo] = useState(!isMultiplayer);
   const [timeLeft, setTimeLeft] = useState(NetworkManager.getInstance().timeLeft);
   const [gameOverData, setGameOverData] = useState<{ winnerId: string, winnerName: string, scores: any } | null>(null);
+
   const [isScoped, setIsScoped] = useState(false);
+  const [activePlayerCount, setActivePlayerCount] = useState(1);
+  const [autoWinTimeout, setAutoWinTimeout] = useState<number | null>(null);
 
   const shootTimer = useRef<number | null>(null);
   const lastSpawnTime = useRef(0);
@@ -717,6 +720,21 @@ export const Game: React.FC<GameProps> = ({ difficulty, onExit, isMultiplayer = 
           stateRef.current.player.ammoReserve = Math.min(MAX_RESERVE, stateRef.current.player.ammoReserve + CLIP_SIZE * 2);
         }
       };
+
+      net.onPlayerLeft = (id) => {
+        setActivePlayerCount(Object.keys(net.players).length);
+      };
+
+      net.onWaitingForPlayers = (timeout) => {
+        setAutoWinTimeout(timeout);
+      };
+
+      net.onGameResumed = () => {
+        setAutoWinTimeout(null);
+      };
+
+      // Set initial count
+      setActivePlayerCount(Object.keys(net.players).length || 1);
     }
     return () => {
       net.onPlayerRespawn = null;
@@ -866,8 +884,24 @@ export const Game: React.FC<GameProps> = ({ difficulty, onExit, isMultiplayer = 
       {/* MULTIPLAYER HUD */}
       {isMultiplayer && (
         <div className="absolute top-4 left-60 z-40 bg-black/60 px-4 py-2 border border-emerald-500 rounded text-emerald-400 font-mono text-sm animate-in fade-in slide-in-from-left-4 duration-500">
-          <span className="text-gray-400 text-xs uppercase block tracking-widest">Room ID</span>
-          <span className="text-xl font-bold">{NetworkManager.getInstance().roomId}</span>
+          <div className="flex flex-col gap-1 text-right min-w-[120px]">
+            <div>
+              <span className="text-gray-400 text-xs uppercase tracking-widest mr-2">Room</span>
+              <span className="text-xl font-bold text-yellow-400">{NetworkManager.getInstance().roomId}</span>
+            </div>
+            <div>
+              <span className="text-gray-400 text-xs uppercase tracking-widest mr-2">Active</span>
+              <span className="text-xl font-bold text-green-400">{activePlayerCount}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auto-Win Warning */}
+      {autoWinTimeout !== null && !isGameOver && (
+        <div className="absolute top-24 left-1/2 transform -translate-x-1/2 bg-yellow-500/90 text-black px-6 py-3 rounded-lg font-bold animate-pulse z-50 shadow-lg border-2 border-white text-center">
+          <div className="text-xl font-black tracking-tighter">⚠️ LAST MAN STANDING</div>
+          <div className="text-sm font-mono tracking-widest">AUTO-WIN IN 10 SECONDS</div>
         </div>
       )}
 

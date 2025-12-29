@@ -23,6 +23,11 @@ export class NetworkManager {
     public onItemRemoved: ((itemId: any) => void) | null = null;
     public onItemCollected: ((data: { type: number }) => void) | null = null;
 
+    // Auto-Win & Count Events
+    public onPlayerLeft: ((id: string) => void) | null = null;
+    public onWaitingForPlayers: ((timeout: number) => void) | null = null;
+    public onGameResumed: (() => void) | null = null;
+
     private constructor() { }
 
     public static getInstance(): NetworkManager {
@@ -72,9 +77,25 @@ export class NetworkManager {
             if (this.onStateUpdate) this.onStateUpdate(this.players);
         });
 
-        this.socket.on('playerLeft', (id: string) => {
+        this.socket.on('playerLeft', (data: any) => {
+            // data can be ID (old) or Object {id, count} (new)
+            const id = (typeof data === 'object') ? data.id : data;
+
             delete this.players[id];
             if (this.onStateUpdate) this.onStateUpdate(this.players);
+
+            // Pass the ID to update logic (Game.tsx calculates keys.length)
+            if (this.onPlayerLeft) this.onPlayerLeft(id);
+        });
+
+        this.socket.on('waitingForPlayers', (data: { timeout: number }) => {
+            // Server warning: "You are the last one. Auto-win in X seconds"
+            if (this.onWaitingForPlayers) this.onWaitingForPlayers(data.timeout);
+        });
+
+        this.socket.on('gameResumed', () => {
+            // Auto-win cancelled
+            if (this.onGameResumed) this.onGameResumed();
         });
 
         // Game Events
@@ -135,6 +156,7 @@ export class NetworkManager {
         });
 
         this.socket.on('timeUpdate', (time: number) => {
+            // console.log('DEBUG: Net Time Update', time);
             this.timeLeft = time; // Update local state
             if (this.onTimeUpdate) this.onTimeUpdate(time);
         });

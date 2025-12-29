@@ -41,7 +41,7 @@ io.on('connection', (socket) => {
         let requestedId, duration = 5, username = 'Anonymous';
         if (typeof data === 'object') {
             requestedId = data.customId;
-            duration = data.duration || 5;
+            duration = parseInt(data.duration) || 5;
             username = data.username || 'Anonymous';
         } else {
             requestedId = data;
@@ -105,9 +105,19 @@ io.on('connection', (socket) => {
         };
         room.scores[socket.id] = 0;
 
+        // Start game if 2+ players (or just start immediately for testing)
         if (room.status === 'WAITING') {
             room.status = 'PLAYING';
+            console.log(`Starting Game Loop forRoom ${roomId} (Duration: ${room.timeLeft}s)`);
             startGameLoop(roomId);
+        }
+
+        // Cancel Auto-Win Timeout if someone joins
+        if (room.autoWinTimeout) {
+            console.log(`Auto-Win cancelled for Room ${roomId} (Player joined)`);
+            clearTimeout(room.autoWinTimeout);
+            room.autoWinTimeout = null;
+            io.to(roomId).emit('gameResumed');
         }
 
         io.to(roomId).emit('playerJoined', {
@@ -117,9 +127,12 @@ io.on('connection', (socket) => {
             currentPlayers: room.players,
             timeLeft: room.timeLeft
         });
+
         io.emit('roomListUpdate', getRoomList());
         console.log(`${username} (${socket.id}) joined room ${roomId}`);
     }
+
+
 
     // --- GAME EVENTS ---
 
@@ -149,12 +162,7 @@ io.on('connection', (socket) => {
         socket.emit('roomListUpdate', getRoomList());
     });
 
-    // --- LOBBY EVENTS ---
 
-    socket.on('createRoom', (requestedId) => {
-        // ... (existing code, ensure it matches context if using replace)
-        // ... actually, I should just insert the requestRoomList listener at the top and then jump to the death logic
-    });
 
     // ... (skipping to death logic) ...
 
@@ -272,14 +280,52 @@ io.on('connection', (socket) => {
             const room = rooms[roomId];
             if (room.players[socket.id]) {
                 delete room.players[socket.id];
-                io.to(roomId).emit('playerLeft', socket.id);
 
-                // Cleanup empty room
-                if (Object.keys(room.players).length === 0) {
-                    clearInterval(room.timerInterval);
-                    delete rooms[roomId];
-                    console.log(`Room ${roomId} deleted`);
+                const count = Object.keys(room.players).length;
+
+                // 1. Notify remaining players
+                io.to(roomId).emit('playerLeft', {
+                    id: socket.id,
+                    count: count
+                });
+
+                // 2. Last Man Standing Logic
+                if (room.status === 'PLAYING') {
+                    if (count === 1) {
+                        // Only one player left! Start Countdown.
+                        console.log(`Room ${roomId} has 1 player left. Starting Auto-Win Timer.`);
+
+                        // Emit warning
+                        io.to(roomId).emit('waitingForPlayers', { timeout: 10 });
+
+                        if (room.autoWinTimeout) clearTimeout(room.autoWinTimeout);
+
+                        room.autoWinTimeout = setTimeout(() => {
+                            // If still 1 player (or 0?), finish game
+                            // Need to re-check count inside timeout
+                            const currentRoom = rooms[roomId];
+                            if (!currentRoom) return;
+
+                            const currentCount = Object.keys(currentRoom.players).length;
+                            if (currentCount <= 1 && currentRoom.status === 'PLAYING') {
+                                console.log(`Auto-Win triggered for Room ${roomId}`);
+                                finishGame(roomId);
+                            }
+                        }, 10000);
+                    } else if (count === 0) {
+                        // Room empty
+                        if (room.timerInterval) clearInterval(room.timerInterval);
+                        if (room.autoWinTimeout) clearTimeout(room.autoWinTimeout);
+                        delete rooms[roomId];
+                        console.log(`Room ${roomId} deleted`);
+                    }
+                } else {
+                    // If waiting and empty, delete
+                    if (count === 0) {
+                        delete rooms[roomId];
+                    }
                 }
+
                 io.emit('roomListUpdate', getRoomList()); // Update list
                 break;
             }
@@ -327,10 +373,22 @@ function finishGame(roomId) {
     let winnerName = 'Unknown';
 
     for (const [pid, score] of Object.entries(room.scores)) {
+        // Only consider currently active players
+        if (!room.players[pid]) continue;
+
         if (score > maxScore) {
             maxScore = score;
             winnerId = pid;
-            if (room.players[pid]) winnerName = room.players[pid].name;
+            winnerName = room.players[pid].name;
+        }
+    }
+
+    // Fallback: If no scores/players, just pick the first active player (for Auto-Win scenarios with 0 score)
+    if (!winnerId) {
+        const activeIds = Object.keys(room.players);
+        if (activeIds.length > 0) {
+            winnerId = activeIds[0];
+            winnerName = room.players[winnerId].name;
         }
     }
 
