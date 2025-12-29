@@ -199,4 +199,15 @@ export class NetworkManager {
         if (!this.roomId) return;
         this.socket?.emit('pickupItem', { roomId: this.roomId, itemId });
     }
+
+    public disconnect() {
+        if (this.socket) {
+            console.log('DEBUG: Disconnecting socket...');
+            this.socket.disconnect();
+            this.socket = null;
+            this.playerId = null;
+            this.roomId = null;
+            this.players = {};
+        }
+    }
 }

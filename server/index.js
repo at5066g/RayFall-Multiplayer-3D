@@ -351,8 +351,10 @@ function startGameLoop(roomId) {
 
         room.timeLeft -= 1;
 
-        // Log every tick for debugging
-        console.log(`Room ${roomId} Tick: ${room.timeLeft}`);
+        // Log every 10 seconds or if it's nearing end
+        if (room.timeLeft % 10 === 0 || room.timeLeft <= 5) {
+            console.log(`Room ${roomId} Tick: ${room.timeLeft}`);
+        }
 
         // Sync time every second
         io.to(roomId).emit('timeUpdate', room.timeLeft);

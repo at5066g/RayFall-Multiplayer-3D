@@ -665,111 +665,106 @@ export const Game: React.FC<GameProps> = ({ difficulty, onExit, isMultiplayer = 
     if (ctx) raycaster.current.render(ctx, stateRef.current, texturesRef.current, isShooting, zoom);
   };
 
+  // Network Listeners - Stable Attachment
   useEffect(() => {
     const net = NetworkManager.getInstance();
-    if (isMultiplayer) {
-      net.onPlayerRespawn = (pos) => {
-        stateRef.current.player.pos.x = pos.x;
-        stateRef.current.player.pos.y = pos.y;
-        stateRef.current.player.health = 100;
-        // Refill Ammo on Respawn (Hardcore Loop)
-        stateRef.current.player.ammo = START_AMMO;
-        stateRef.current.player.ammoReserve = START_RESERVE;
-      };
-      net.onPlayerDied = (data) => {
-        // data.scores is a map of { playerId: score }
-        if (data.scores && net.playerId && data.scores[net.playerId]) {
-          stateRef.current.score = data.scores[net.playerId] * 100; // Assuming 1 kill = 100 points
+    if (!isMultiplayer) return;
+
+    console.log('DEBUG: Attaching Network Listeners in Game.tsx');
+
+    net.onPlayerRespawn = (pos) => {
+      stateRef.current.player.pos.x = pos.x;
+      stateRef.current.player.pos.y = pos.y;
+      stateRef.current.player.health = 100;
+      // Refill Ammo on Respawn (Hardcore Loop)
+      stateRef.current.player.ammo = START_AMMO;
+      stateRef.current.player.ammoReserve = START_RESERVE;
+    };
+
+    net.onPlayerDied = (data) => {
+      if (data.scores && net.playerId && data.scores[net.playerId]) {
+        stateRef.current.score = data.scores[net.playerId] * 100;
+      }
+    };
+
+    net.onHealthUpdate = (data) => {
+      if (data.id === net.playerId) {
+        const oldHealth = stateRef.current.player.health;
+        stateRef.current.player.health = data.health;
+        if (data.health < oldHealth) {
+          setDamageFlash(0.6);
+          damageFlashRef.current = 0.6;
+          soundManager.current.playPlayerDamage();
         }
-      };
+      }
+    };
 
-      net.onHealthUpdate = (data) => {
-        if (data.id === net.playerId) {
-          const oldHealth = stateRef.current.player.health;
-          stateRef.current.player.health = data.health;
+    net.onItemSpawn = (item) => {
+      console.log(`DEBUG: Adding Item ${item.id} to World at ${item.x},${item.y}`);
+      stateRef.current.items.push({
+        id: item.id,
+        pos: { x: item.x, y: item.y },
+        textureId: item.type,
+        spawnTime: performance.now()
+      });
+    };
 
-          // Visual feedback if damaged
-          if (data.health < oldHealth) {
-            setDamageFlash(0.6);
-            damageFlashRef.current = 0.6;
-            soundManager.current.playPlayerDamage();
-          }
-        }
-      };
+    net.onItemRemoved = (itemId) => {
+      stateRef.current.items = stateRef.current.items.filter(i => i.id !== itemId);
+    };
 
-      net.onItemSpawn = (item) => {
-        console.log(`DEBUG: Adding Item ${item.id} to World at ${item.x},${item.y}`);
-        stateRef.current.items.push({
-          id: item.id,
-          pos: { x: item.x, y: item.y },
-          textureId: item.type,
-          spawnTime: performance.now()
-        });
-      };
+    net.onItemCollected = (data) => {
+      if (data.type === CellType.HEALTH_ORB) {
+        soundManager.current.playHeal();
+        stateRef.current.player.health = Math.min(100, stateRef.current.player.health + 30);
+      } else {
+        soundManager.current.playAmmoPickup();
+        stateRef.current.player.ammoReserve = Math.min(MAX_RESERVE, stateRef.current.player.ammoReserve + CLIP_SIZE * 2);
+      }
+    };
 
-      net.onItemRemoved = (itemId) => {
-        stateRef.current.items = stateRef.current.items.filter(i => i.id !== itemId);
-      };
+    net.onPlayerLeft = (id) => {
+      setActivePlayerCount(Object.keys(net.players).length);
+    };
 
-      net.onItemCollected = (data) => {
-        if (data.type === CellType.HEALTH_ORB) {
-          soundManager.current.playHeal();
-          stateRef.current.player.health = Math.min(100, stateRef.current.player.health + 30);
-        } else {
-          soundManager.current.playAmmoPickup();
-          stateRef.current.player.ammoReserve = Math.min(MAX_RESERVE, stateRef.current.player.ammoReserve + CLIP_SIZE * 2);
-        }
-      };
+    net.onWaitingForPlayers = (timeout) => {
+      setAutoWinTimeout(timeout);
+    };
 
-      net.onPlayerLeft = (id) => {
-        setActivePlayerCount(Object.keys(net.players).length);
-      };
+    net.onGameResumed = () => {
+      setAutoWinTimeout(null);
+    };
 
-      net.onWaitingForPlayers = (timeout) => {
-        setAutoWinTimeout(timeout);
-      };
+    net.onTimeUpdate = (time) => {
+      console.log('DEBUG: Game.tsx TimeUpdate', time);
+      setTimeLeft(time);
+    };
 
-      net.onGameResumed = () => {
-        setAutoWinTimeout(null);
-      };
+    net.onGameOver = (data) => {
+      setGameOverData(data);
+      setIsPaused(true);
+      if (document.pointerLockElement) document.exitPointerLock();
+    };
 
-      // Set initial count
-      setActivePlayerCount(Object.keys(net.players).length || 1);
-    }
+    // Set initial count
+    setActivePlayerCount(Object.keys(net.players).length || 1);
+
+    // Cleanup
     return () => {
-      net.onPlayerRespawn = null;
-      net.onPlayerDied = null;
-      net.onItemCollected = (data) => {
-        if (data.type === CellType.HEALTH_ORB) {
-          soundManager.current.playHeal();
-          stateRef.current.player.health = Math.min(100, stateRef.current.player.health + 30);
-        } else {
-          soundManager.current.playAmmoPickup();
-          stateRef.current.player.ammoReserve = Math.min(MAX_RESERVE, stateRef.current.player.ammoReserve + CLIP_SIZE * 2);
-        }
-      };
-
-      net.onTimeUpdate = (time) => {
-        setTimeLeft(time);
-      };
-
-      net.onGameOver = (data) => {
-        setGameOverData(data);
-        setIsPaused(true); // Pause local input
-        if (document.pointerLockElement) document.exitPointerLock();
-      };
-    }
-    return () => {
+      console.log('DEBUG: Detaching Network Listeners');
       net.onPlayerRespawn = null;
       net.onPlayerDied = null;
       net.onHealthUpdate = null;
       net.onItemSpawn = null;
       net.onItemRemoved = null;
       net.onItemCollected = null;
-      net.onTimeUpdate = null;
+      net.onTimeUpdate = null; // Important: Ensure this isn't killed prematurely
       net.onGameOver = null;
+      net.onPlayerLeft = null;
+      net.onWaitingForPlayers = null;
+      net.onGameResumed = null;
     };
-  }, [isMultiplayer]);
+  }, []); // EMPTIED DEPENDENCY ARRAY to prevent re-runs
 
   useEffect(() => { requestRef.current = requestAnimationFrame(tick); return () => cancelAnimationFrame(requestRef.current); }, [isPaused]);
 
@@ -928,7 +923,10 @@ export const Game: React.FC<GameProps> = ({ difficulty, onExit, isMultiplayer = 
             <div className="text-6xl text-green-500 font-black font-mono">{gameOverData.scores[gameOverData.winnerId] || 0}</div>
           </div>
           <button
-            onClick={onExit}
+            onClick={() => {
+              NetworkManager.getInstance().disconnect();
+              onExit();
+            }}
             className="mt-12 px-8 py-4 bg-white text-black font-bold font-mono uppercase tracking-widest hover:bg-gray-200 transition-colors"
           >
             Return to Lobby
@@ -969,7 +967,15 @@ export const Game: React.FC<GameProps> = ({ difficulty, onExit, isMultiplayer = 
             )}
 
             <button onClick={() => setIsPaused(false)} className="py-4 bg-white text-black font-mono font-black uppercase tracking-widest hover:bg-neutral-200 transition-colors">Resume</button>
-            <button onClick={onExit} className="py-4 border-2 border-white text-white font-mono font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all">Abort Mission</button>
+            <button
+              onClick={() => {
+                NetworkManager.getInstance().disconnect();
+                onExit();
+              }}
+              className="py-4 border-2 border-white text-white font-mono font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all"
+            >
+              Abort Mission
+            </button>
           </div>
         </div>
       )}
