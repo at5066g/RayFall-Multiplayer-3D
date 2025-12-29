@@ -156,7 +156,7 @@ export class NetworkManager {
         });
 
         this.socket.on('timeUpdate', (time: number) => {
-            // console.log('DEBUG: Net Time Update', time);
+            console.log('DEBUG: Net Time Update', time);
             this.timeLeft = time; // Update local state
             if (this.onTimeUpdate) this.onTimeUpdate(time);
         });

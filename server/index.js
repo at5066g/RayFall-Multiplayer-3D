@@ -351,6 +351,9 @@ function startGameLoop(roomId) {
 
         room.timeLeft -= 1;
 
+        // Log every tick for debugging
+        console.log(`Room ${roomId} Tick: ${room.timeLeft}`);
+
         // Sync time every second
         io.to(roomId).emit('timeUpdate', room.timeLeft);
 
