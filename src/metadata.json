@@ -1,0 +1,5 @@
+{
+  "name": "RAYFALL",
+  "description": "A Wolfenstein 3D-style raycasting engine built with React, TypeScript, and HTML5 Canvas. Features DDA algorithm, texture mapping, and smooth movement.",
+  "requestFramePermissions": []
+}
