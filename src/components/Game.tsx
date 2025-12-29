@@ -727,6 +727,10 @@ export const Game: React.FC<GameProps> = ({ difficulty, onExit, isMultiplayer = 
       setActivePlayerCount(Object.keys(net.players).length);
     };
 
+    net.onPlayerJoined = (data) => {
+      setActivePlayerCount(Object.keys(net.players).length);
+    };
+
     net.onWaitingForPlayers = (timeout) => {
       setAutoWinTimeout(timeout);
     };
@@ -761,6 +765,7 @@ export const Game: React.FC<GameProps> = ({ difficulty, onExit, isMultiplayer = 
       net.onTimeUpdate = null; // Important: Ensure this isn't killed prematurely
       net.onGameOver = null;
       net.onPlayerLeft = null;
+      net.onPlayerJoined = null;
       net.onWaitingForPlayers = null;
       net.onGameResumed = null;
     };

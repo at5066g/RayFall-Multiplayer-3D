@@ -11,6 +11,7 @@ export class NetworkManager {
 
     // Callbacks
     public onStateUpdate: ((players: any) => void) | null = null;
+    public onPlayerJoined: ((data: any) => void) | null = null;
     public onRoomJoined: ((roomId: string) => void) | null = null;
     public onRoomListUpdate: ((rooms: any[]) => void) | null = null;
     public onTimeUpdate: ((time: number) => void) | null = null;
@@ -72,6 +73,8 @@ export class NetworkManager {
                 if (this.onRoomJoined) {
                     this.onRoomJoined(this.roomId!);
                 }
+            } else {
+                if (this.onPlayerJoined) this.onPlayerJoined(data);
             }
 
             if (this.onStateUpdate) this.onStateUpdate(this.players);
