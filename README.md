@@ -1,8 +1,11 @@
 # RAYFALL
 
-**RAYFALL** is a high-performance, retro-style 3D First-Person Shooter (FPS) engine built from scratch using **React**, **TypeScript**, and **HTML5 Canvas**. It features a classic **Raycasting Engine** (Wolfenstein 3D style) and fully integrated **Multiplayer Mode**.
+**RAYFALL** is a high-performance, retro-style 3D First-Person Shooter (FPS) engine built from scratch using **React**, **TypeScript**, and **HTML5 Canvas**. It features a classic **Raycasting Engine** (Wolfenstein 3D style) and fully integrated **Multiplayer Mode**. 
 
-[RAYFALL Preview - for PC only](https://rayfall.onrender.com)
+
+
+ Might take a few seconds to start the instance - 
+ [RAYFALL Preview - for PC only](https://rayfall.onrender.com)
 ## 🚀 Features
 
 ### Multiplayer Mode (New)
