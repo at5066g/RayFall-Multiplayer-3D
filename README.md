@@ -4,7 +4,7 @@
 
 
 
- Might take a few seconds to start the instance - 
+ Might take a few seconds to start the instance -- 
  [RAYFALL Preview - for PC only](https://rayfall.onrender.com)
 ## 🚀 Features
 
